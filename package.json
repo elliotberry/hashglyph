@@ -13,6 +13,9 @@
   },
   "scripts": {
     "start": "node index.js",
-    "test": "node index.js 1a2b > /tmp/character-hash-1a2b.svg && echo \"wrote /tmp/character-hash-1a2b.svg\""
+    "test": "node index.js 0000000000001a2b > /tmp/character-hash-0000000000001a2b.svg && echo \"wrote /tmp/character-hash-0000000000001a2b.svg\""
+  },
+  "dependencies": {
+    "yargs": "^18.0.0"
   }
 }

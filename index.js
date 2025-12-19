@@ -3,74 +3,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import generateSvg from './lib/generateSvg.js';
-
-function printHelp(exitCode = 0) {
-  const msg = `
-character-hash
-
-Usage:
-  character-hash <16-hex-chars> [out.svg]
-
-Examples:
-  character-hash 0123456789abcdef > glyph.svg
-  character-hash 0x0123456789ABCDEF glyph.svg
-  character-hash deadbeefcafebabe --size 512 --stroke 18 --fg "#111" --bg "white" --pad 20 > deadbeef.svg
-
-Options:
-  --out <file>        Write SVG to a file instead of stdout
-  --size <px>         Output width/height in px (default: 256)
-  --stroke <px>       Stroke width in px (default: 16)
-  --pad <px>          Padding inside viewBox units (default: 14)
-  --fg <color>        Stroke color (default: black)
-  --bg <color|none>   Background fill (default: none)
-  -h, --help          Show help
-`;
-  process.stdout.write(msg.trimStart());
-  process.stdout.write('\n');
-  process.exit(exitCode);
-}
-
-function parseArgs(argv) {
-  const args = {
-    hex: null,
-    out: null,
-    size: 256,
-    stroke: 16,
-    pad: 14,
-    fg: 'black',
-    bg: 'none',
-  };
-
-  const positionals = [];
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === '-h' || a === '--help') printHelp(0);
-    if (!a.startsWith('-')) {
-      positionals.push(a);
-      continue;
-    }
-
-    const next = () => {
-      if (i + 1 >= argv.length) {
-        throw new Error(`Missing value for ${a}`);
-      }
-      return argv[++i];
-    };
-
-    if (a === '--out') args.out = next();
-    else if (a === '--size') args.size = Number(next());
-    else if (a === '--stroke') args.stroke = Number(next());
-    else if (a === '--pad') args.pad = Number(next());
-    else if (a === '--fg') args.fg = next();
-    else if (a === '--bg') args.bg = next();
-    else throw new Error(`Unknown option: ${a}`);
-  }
-
-  if (positionals.length > 0) args.hex = positionals[0];
-  if (positionals.length > 1 && !args.out) args.out = positionals[1];
-  if (positionals.length > 2) throw new Error('Too many positional arguments.');
-  return args;
-}
+import yargs from 'yargs/yargs';
+import { hideBin } from 'yargs/helpers';
 
 function normalizeHex64(input) {
   if (typeof input !== 'string' || input.trim() === '') return null;
@@ -82,20 +16,77 @@ function normalizeHex64(input) {
 }
 
 function main() {
-  let args;
-  try {
-    args = parseArgs(process.argv.slice(2));
-  } catch (e) {
-    process.stderr.write(`${String(e && e.message ? e.message : e)}\n\n`);
-    printHelp(1);
-    return;
+  const parser = yargs(hideBin(process.argv))
+    .scriptName('character-hash')
+    .usage('$0 <16-hex-chars> [out.svg]')
+    .example('$0 0123456789abcdef > glyph.svg')
+    .example('$0 0x0123456789ABCDEF glyph.svg')
+    .example('$0 deadbeefcafebabe --size 512 --stroke 18 --fg "#111" --bg "white" --pad 20 > deadbeef.svg')
+    .option('out', {
+      type: 'string',
+      describe: 'Write SVG to a file instead of stdout',
+    })
+    .option('size', {
+      type: 'number',
+      default: 256,
+      describe: 'Output width/height in px',
+    })
+    .option('stroke', {
+      type: 'number',
+      default: 16,
+      describe: 'Stroke width in px',
+    })
+    .option('pad', {
+      type: 'number',
+      default: 14,
+      describe: 'Padding inside viewBox units',
+    })
+    .option('fg', {
+      type: 'string',
+      default: 'black',
+      describe: 'Stroke color',
+    })
+    .option('bg', {
+      type: 'string',
+      default: 'none',
+      describe: 'Background fill (use "none" for transparent)',
+    })
+    .help('help')
+    .alias('help', 'h')
+    .strictOptions(true)
+    .fail((msg, err, y) => {
+      const text = msg || (err ? err.message : 'Unknown error');
+      if (text) process.stderr.write(`${text}\n\n`);
+      y.showHelp((s) => process.stderr.write(s.endsWith('\n') ? s : `${s}\n`));
+      process.exit(1);
+    });
+
+  const argv = parser.parseSync();
+
+  const positionals = (argv._ || []).map((v) => String(v));
+  if (positionals.length > 2) {
+    process.stderr.write('Too many positional arguments.\n\n');
+    parser.showHelp((s) => process.stderr.write(s.endsWith('\n') ? s : `${s}\n`));
+    process.exit(1);
   }
+
+  const hexRaw = positionals[0] ?? null;
+  const outPositional = positionals[1] ?? null;
+  const args = {
+    hex: hexRaw ?? null,
+    out: argv.out ?? outPositional ?? null,
+    size: argv.size,
+    stroke: argv.stroke,
+    pad: argv.pad,
+    fg: argv.fg,
+    bg: argv.bg,
+  };
 
   const hex = normalizeHex64(args.hex);
   if (!hex) {
     process.stderr.write('Expected a 16-hex-character string (64-bit), e.g. "0123456789abcdef" or "0xDEADBEEFCAFEBABE".\n\n');
-    printHelp(1);
-    return;
+    parser.showHelp((s) => process.stderr.write(s.endsWith('\n') ? s : `${s}\n`));
+    process.exit(1);
   }
 
   if (!Number.isFinite(args.size) || args.size <= 0) {
