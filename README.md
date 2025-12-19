@@ -1,6 +1,6 @@
-# character-hash
+# hashglyph
 
-Deterministically generate an SVG glyph that aesthetically resembles a Japanese/Chinese character from a **16-hex-character string** (64-bit).
+Deterministically generate SVG glyphs that distantly resemble CJK graphemes, from a 64-bit hash string.
 
 ## Install / run
 

@@ -1,11 +1,11 @@
 {
-  "name": "character-hash",
+  "name": "hashglyph",
   "version": "0.0.1",
-  "description": "Deterministically generate CJK-styled SVG glyphs from a 16-hex-character string",
+  "description": "Deterministically generate SVG glyphs that distantly resemble CJK graphemes, from a 64-bit hash string.",
   "license": "The Unlicense",
   "main": "./index.js",
   "bin": {
-    "character-hash": "./index.js"
+    "hashglyph": "./index.js"
   },
   "type": "module",
   "engines": {

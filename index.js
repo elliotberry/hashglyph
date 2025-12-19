@@ -17,7 +17,7 @@ function normalizeHex64(input) {
 
 function main() {
   const parser = yargs(hideBin(process.argv))
-    .scriptName('character-hash')
+    .scriptName('hashglyph')
     .usage('$0 <16-hex-chars> [out.svg]')
     .example('$0 0123456789abcdef > glyph.svg')
     .example('$0 0x0123456789ABCDEF glyph.svg')
