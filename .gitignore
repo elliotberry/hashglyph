@@ -47,6 +47,9 @@ Temporary Items
 node_modules
 yarn-error.log
 
+# local outputs
+out/
+
 # ignore composer vendor directory
 /vendor
 
